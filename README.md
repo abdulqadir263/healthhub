@@ -2,9 +2,8 @@
 # Welcome to HealthHub
 
 # Author: 
-```
-Mansab Hashim
-```
+[Mansab Hashim](https://github.com/mansabhashim)
+
 
 ## How can I edit this code?
 
