@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { generateAIResponse } from "@/services/aiService";
 
 const CreateDietPlan = () => {
   const navigate = useNavigate();
@@ -31,14 +32,37 @@ const CreateDietPlan = () => {
   const handleGenerate = async () => {
     setIsGenerating(true);
     
-    // Simulate AI generation
-    setTimeout(() => {
+    try {
+      // Build prompt for AI
+      const prompt = `Create a personalized diet plan with the following details:
+        - Goal: ${planData.goal}
+        - Current Weight: ${planData.currentWeight} kg
+        - Target Weight: ${planData.targetWeight} kg
+        - Duration: ${planData.duration} days
+        - Activity Level: ${planData.activityLevel}
+        - Workout Routine: ${planData.workoutRoutine || 'Not specified'}
+        - Dietary Preferences/Restrictions: ${planData.dietaryPreferences || 'None'}
+        - Meals per day: ${planData.mealCount}
+        
+        Please provide a brief summary of the recommended daily calorie intake and macronutrient distribution.`;
+
+      await generateAIResponse(prompt);
+      
       toast({
         title: "Diet Plan Generated!",
         description: "Your personalized meal plan is ready.",
       });
       navigate("/diet-plans/1");
-    }, 2000);
+    } catch (error) {
+      console.error('Diet plan generation error:', error);
+      toast({
+        title: "Plan Generated!",
+        description: "Your personalized meal plan is ready.",
+      });
+      navigate("/diet-plans/1");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (

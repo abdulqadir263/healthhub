@@ -6,8 +6,7 @@ import {
   FileText, 
   MessageSquare,
   User,
-  LogOut,
-  Menu
+  LogOut
 } from "lucide-react";
 import { NavLink } from "./NavLink";
 import {
@@ -23,6 +22,8 @@ import {
 } from "./ui/sidebar";
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -36,10 +37,22 @@ const menuItems = [
 export function AppSidebar() {
   const { open } = useSidebar();
   const navigate = useNavigate();
+  const { logout } = useAuth();
+  const { toast } = useToast();
 
-  const handleLogout = () => {
-    // Placeholder logout logic
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Logged out",
+        description: "You have been logged out successfully.",
+      });
+      navigate("/login");
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still navigate to login on error
+      navigate("/login");
+    }
   };
 
   return (
