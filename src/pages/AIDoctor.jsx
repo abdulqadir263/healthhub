@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar } from "@/components/ui/avatar";
 import { Heart, Send, User } from "lucide-react";
+import { chatWithAI, getCurrentProvider } from "@/services/aiService";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const AIDoctor = () => {
   const [messages, setMessages] = useState([
@@ -16,9 +18,10 @@ const AIDoctor = () => {
     }
   ]);
   const [inputMessage, setInputMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendMessage = () => {
-    if (!inputMessage.trim()) return;
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || isLoading) return;
 
     const newUserMessage = {
       id: messages.length + 1,
@@ -27,31 +30,45 @@ const AIDoctor = () => {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    setMessages([...messages, newUserMessage]);
+    setMessages(prev => [...prev, newUserMessage]);
     setInputMessage("");
+    setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      // Prepare messages for AI service
+      const aiMessages = [...messages, newUserMessage].map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+
+      // Add system context for health-focused responses
+      const systemContext = {
+        role: "user",
+        content: "You are a helpful AI health assistant. Provide health-related advice while always reminding users to consult healthcare professionals for medical decisions. Be empathetic, informative, and supportive."
+      };
+
+      const response = await chatWithAI([systemContext, ...aiMessages]);
+
       const aiResponse = {
         id: messages.length + 2,
         role: "assistant",
-        content: getAIResponse(inputMessage),
+        content: response,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
-  };
-
-  const getAIResponse = (query) => {
-    // Placeholder AI responses
-    const responses = [
-      "Based on your health profile, I recommend focusing on a balanced diet rich in vegetables and lean proteins. Your current weight of 73.2 kg is trending in the right direction.",
-      "Given your pre-diabetic status from your recent lab report, it's important to maintain stable blood sugar levels. I suggest limiting simple carbohydrates and focusing on whole grains.",
-      "Your blood pressure readings look good. Continue with your current diet and exercise routine. Remember to stay hydrated and limit sodium intake.",
-      "For your heart health, I recommend incorporating more Omega-3 rich foods like salmon, which I see you've been enjoying from your recent meal plans.",
-      "Based on your activity level and goals, your current calorie intake of 1800 calories per day is appropriate for gradual, sustainable weight loss."
-    ];
-    return responses[Math.floor(Math.random() * responses.length)];
+    } catch (error) {
+      console.error('AI Chat Error:', error);
+      // Fallback response if API fails
+      const fallbackResponse = {
+        id: messages.length + 2,
+        role: "assistant",
+        content: "I apologize, but I'm having trouble processing your request right now. Please try again later or consult with a healthcare professional for immediate assistance.",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages(prev => [...prev, fallbackResponse]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const quickQuestions = [
@@ -66,7 +83,10 @@ const AIDoctor = () => {
       <div className="h-[calc(100vh-12rem)] flex flex-col">
         <div className="mb-6">
           <h1 className="text-4xl font-bold text-foreground mb-2">AI Health Assistant</h1>
-          <p className="text-muted-foreground text-lg">Get instant medical guidance based on your health profile</p>
+          <p className="text-muted-foreground text-lg">
+            Get instant medical guidance based on your health profile
+            <span className="text-xs ml-2 opacity-70">(Powered by {getCurrentProvider()})</span>
+          </p>
         </div>
 
         <Card className="glass-card flex-1 flex flex-col">
@@ -99,7 +119,7 @@ const AIDoctor = () => {
                         : 'glass-card'
                     }`}
                   >
-                    <p className={message.role === 'user' ? 'text-white' : 'text-foreground'}>
+                    <p className={`${message.role === 'user' ? 'text-white' : 'text-foreground'} whitespace-pre-wrap`}>
                       {message.content}
                     </p>
                   </div>
@@ -107,6 +127,18 @@ const AIDoctor = () => {
                 </div>
               </div>
             ))}
+            {isLoading && (
+              <div className="flex gap-3">
+                <Avatar className="h-10 w-10 flex-shrink-0 bg-gradient-to-br from-primary to-primary-glow">
+                  <div className="h-full w-full flex items-center justify-center">
+                    <Heart className="h-5 w-5 text-white" />
+                  </div>
+                </Avatar>
+                <div className="glass-card p-4 rounded-2xl">
+                  <LoadingSpinner size="sm" />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Quick Questions */}
@@ -137,13 +169,14 @@ const AIDoctor = () => {
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 className="glass-input flex-1 h-12"
+                disabled={isLoading}
               />
               <Button
                 className="medical-gradient text-white h-12 px-6"
                 onClick={handleSendMessage}
-                disabled={!inputMessage.trim()}
+                disabled={!inputMessage.trim() || isLoading}
               >
-                <Send className="h-5 w-5" />
+                {isLoading ? <LoadingSpinner size="sm" /> : <Send className="h-5 w-5" />}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-2">

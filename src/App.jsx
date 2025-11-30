@@ -24,17 +24,10 @@ import Profile from "./pages/Profile";
 import ProfileEdit from "./pages/ProfileEdit";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./context/AuthContext";
-import { testGeminiAPI } from "./utils/testGemini";
-import { useEffect } from "react";
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Test Gemini API on app load
-  useEffect(() => {
-    testGeminiAPI();
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

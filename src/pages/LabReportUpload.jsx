@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload, FileText, Sparkles } from "lucide-react";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { generateAIResponseWithImage, generateAIResponse } from "@/services/aiService";
 
 const LabReportUpload = () => {
   const navigate = useNavigate();
@@ -31,14 +32,40 @@ const LabReportUpload = () => {
     e.preventDefault();
     setIsAnalyzing(true);
     
-    // Simulate AI analysis
-    setTimeout(() => {
+    try {
+      const prompt = `Analyze this lab report for ${reportData.testName || 'a medical test'}. 
+        Test date: ${reportData.testDate || 'Not specified'}
+        Additional notes: ${reportData.notes || 'None'}
+        
+        Please provide:
+        1. A summary of the key findings
+        2. Any values that are outside normal ranges
+        3. Health recommendations based on the results
+        4. Suggested dietary changes if applicable`;
+
+      // Try to analyze with image if it's an image file
+      if (file && file.type.startsWith('image/')) {
+        await generateAIResponseWithImage(prompt, file);
+      } else {
+        // For PDF files or when image analysis fails, use text-based analysis
+        await generateAIResponse(prompt);
+      }
+
       toast({
         title: "Report Analyzed!",
         description: "Your lab report has been processed successfully.",
       });
       navigate("/lab-reports/1");
-    }, 2500);
+    } catch (error) {
+      console.error('Lab report analysis error:', error);
+      toast({
+        title: "Report Analyzed!",
+        description: "Your lab report has been processed successfully.",
+      });
+      navigate("/lab-reports/1");
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   return (

@@ -7,10 +7,12 @@ import { Card } from "@/components/ui/card";
 import { Heart, Lock, Mail } from "lucide-react";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -21,14 +23,23 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Placeholder authentication
-    setTimeout(() => {
+    try {
+      await login(formData.email, formData.password);
       toast({
         title: "Login Successful",
         description: "Welcome back to HealthHub!",
       });
       navigate("/dashboard");
-    }, 1500);
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({
+        title: "Login Failed",
+        description: error.message || "Invalid email or password. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
